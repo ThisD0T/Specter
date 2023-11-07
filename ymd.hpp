@@ -3,6 +3,9 @@
 #include <string>
 #include <map>
 
+#ifndef __YMD__
+#define __YMD__
+
 // file for defining year, month and day structs for other files
 
 // because you can't make a static map apparently?
@@ -73,7 +76,7 @@ struct Month {
 
         Month(int month_digit): digit(month_digit), name(month_name_from_digit(digit)) {
             for (int i = 0; i < days_in_month(name); i++) {
-                Day new_day = {i};
+                Day new_day = {i + 1};
                 days.push_back(new_day);
             }
         }
@@ -90,9 +93,7 @@ class Year {
         }
 
         void test_print() {
-            std::cout << year_num << ":";
             for (Month month : months) {
-                std::cout << "\n" << month.digit << ", " << month.name << "\nlast day: " << month.days.size() << "\n";
             }
         }
 
@@ -104,6 +105,7 @@ std::map<std::string, int> get_days_in_months();
 
 
 
+// responsible for doing the actual editing of data
 class Manager {
     public:
         Manager() {}
@@ -116,3 +118,5 @@ class Manager {
 
         Year current_year_editing;
 };
+
+#endif
