@@ -5,19 +5,6 @@
 #include "ymd.h"
 #include "Specter.hpp"
 
-
-// the class that will handle user input
-class Interface {
-    public:
-
-        Interface() {}
-
-
-        void clear_screen() {
-            system("clear");
-        }
-};
-
 int main() {
     Interface ui;
 
