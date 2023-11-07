@@ -8,7 +8,7 @@ class Interface {
 
 
         void clear_screen() {
-            system("clear");
+            //system("clear");
         }
 };
 
@@ -16,6 +16,6 @@ class Specter {
     public:
         Specter();
 
-        Manager manager;
+        //Manager manager;
         Interface interface;
 };

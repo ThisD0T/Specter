@@ -1,4 +1,4 @@
-OBJS = main.cpp ymd.cpp
+OBJS = main.cpp
 
 CC = g++
 

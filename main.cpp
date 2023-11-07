@@ -2,13 +2,13 @@
 #include <vector>
 #include <map>
 
-#include "ymd.h"
-#include "Specter.hpp"
+#include "ymd.hpp"
 
 int main() {
-    Interface ui;
+    Manager manager;
+    manager.make_new_year(2023);
 
-    std::map<std::string, int> map = get_days_in_months();
+    std::cout << days_in_month("Feb");
 
     return 0;
 }
