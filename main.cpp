@@ -6,7 +6,8 @@
 #include "ui.hpp"
 
 int main() {
-    Interface interface = Interface();
+    Year year = Year(2023);
+    Interface interface = Interface(&year);
     interface.init_ncurses();
     interface.main_loop();
     Manager manager;

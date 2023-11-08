@@ -81,11 +81,21 @@ class Month {
         std::string name;
 
         Month(int month_digit): digit(month_digit), name(month_name_from_digit(digit)) {
-            int days_counter;
+            int days_counter = 0;
+            int num_weeks;
 
-            for (int i = 0; i < std::ceil(days_in_month(name) / 7) ; i++) {
+            if (days_in_month(name) > 28) {
+                num_weeks = 5;
+            }
+            else {
+                num_weeks = 4;
+            }
+
+            // create weeks
+            for (int i = 0; i <  num_weeks; i++) {
                 Week new_week;
 
+                // fill week with days
                 while (new_week.days.size() < 7) {
                     days_counter ++;
                     if (days_counter > days_in_month(name)) {
@@ -95,6 +105,8 @@ class Month {
                     Day new_day = {days_counter};
                     new_week.days.push_back(new_day);
                 }
+
+                weeks.push_back(new_week);
             }
         }
 };
