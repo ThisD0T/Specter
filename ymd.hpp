@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cmath>
 
 #ifndef __YMD__
 #define __YMD__
@@ -68,16 +69,32 @@ struct Day {
         std::vector<Todo> todos;
 };
 
-struct Month {
+struct Week {
     public:
         std::vector<Day> days;
+};
+
+class Month {
+    public:
+        std::vector<Week> weeks;
         int digit;
         std::string name;
 
         Month(int month_digit): digit(month_digit), name(month_name_from_digit(digit)) {
-            for (int i = 0; i < days_in_month(name); i++) {
-                Day new_day = {i + 1};
-                days.push_back(new_day);
+            int days_counter;
+
+            for (int i = 0; i < std::ceil(days_in_month(name) / 7) ; i++) {
+                Week new_week;
+
+                while (new_week.days.size() < 7) {
+                    days_counter ++;
+                    if (days_counter > days_in_month(name)) {
+                        break;
+                    }
+
+                    Day new_day = {days_counter};
+                    new_week.days.push_back(new_day);
+                }
             }
         }
 };
