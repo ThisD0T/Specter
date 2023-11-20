@@ -8,8 +8,7 @@
 int main() {
     Year year = Year(2023);
     Interface interface = Interface(&year);
-    interface.init_ncurses();
-    interface.main_loop();
+    interface.init();
     Manager manager;
     manager.make_new_year(2023);
 

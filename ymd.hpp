@@ -134,7 +134,7 @@ std::map<std::string, int> get_days_in_months();
 
 
 
-// responsible for doing the actual editing of data
+//stores data that needs to be serde'd
 class Manager {
     public:
         Manager() {}

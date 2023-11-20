@@ -3,6 +3,8 @@
 #include <ncurses.h>
 #include "ymd.hpp"
 
+using std::string;
+
 #ifndef SPECTER_INTERFACE
 #define SPECTER_INTERFACE
 
@@ -13,6 +15,16 @@ enum EditingType{
     DAY,
 };
 
+enum UserInput {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    ESC,
+    ENTER,
+    QUIT,
+    NOTHING,
+};
 
 // the class that will handle user input, this WILL NOT do any manipulation of the data, that is for Manager
 // this is simple a class for the user to interface with Manager 
@@ -33,7 +45,7 @@ class Interface {
         int columns;// num of columns to have (I know this is weird)
         int padding_x = 15, padding_y = 4;
         std::vector<std::string> menu_options;
-        bool user_enter;
+        UserInput user_input;
 
         int currently_editing;
         const EditingType EDITING_HEIRARCHY[4] = {YEAR, MONTH, WEEK, DAY};
@@ -42,7 +54,7 @@ class Interface {
             editing_year = year;
         }
 
-        void init_ncurses() {
+        void init() {
             // ----- ncurses initialization -----
             initscr();
             noecho();
@@ -54,67 +66,13 @@ class Interface {
             editing_week = &editing_month->weeks[0];
             editing_day = &editing_week->days[0];
             currently_editing = 1;
+
+            main_loop();
         }
 
         void main_loop() {
-            user_enter = false;
-            int input;
-
             // TEST
-            while (input != 'q') {
-                clear();
-                input = 0;
-
-                refresh();
-
-                input = getch();
-                std::cout << input << "  ";
-                switch (input) {
-                    case 107:// Up
-                        if (selected - columns < 0) {
-                            break;
-                        }
-                        selected -= columns;
-                        break;
-
-                    case 106:// Down
-                        if (selected + columns >= menu_options.size()) {
-                            break;
-                        }
-                        selected += columns;
-                        break;
-
-                    case 104:// Left
-                        if (selected - 1 < 0) {
-                            selected = menu_options.size() - 1;
-                            break;
-                        }
-                        selected --;
-                        break;
-
-                    case 108:// Right
-                        if (selected + 1 >= menu_options.size()) {
-                            selected = 0;
-                            break;
-                        }
-                        selected ++;
-                        break;
-
-                    case 97:// Esc
-                        if (currently_editing > 0) {
-                            currently_editing --;
-                            break;
-                        }
-                        break;
-
-                    case 102:// Enter
-                        user_enter = true;
-                        break;
-
-                    default:
-                        break;
-                }
-
+            while (user_input != QUIT) {
                 switch (EDITING_HEIRARCHY[currently_editing]) {
                     case YEAR:
                         display_year();
@@ -129,14 +87,75 @@ class Interface {
                         display_day();
                         break;
                 }
-    
-
+                handle_input();
             }
             endwin();
         }
 
-        void clear_screen() {
-            system("clear");
+        void handle_input() {
+            int input = 0;
+            input = getch();
+
+            switch (input) {
+                case 107:// up 
+                    if (selected - columns >= 0) {
+                        selected -= columns;
+                    }
+                    user_input = UP;
+                    break;
+                case 106:// down
+                    if (selected + columns < menu_options.size()) {
+                        selected += columns;
+                    }
+                    user_input = DOWN;
+                    break;
+                case 104:// left
+                    if (selected - 1 >= 0) {
+                        selected --;
+                    }
+                    user_input = LEFT;
+                    break;
+                case 108:// right
+                    if (selected + 1 < menu_options.size()) {
+                        selected ++;
+                    }
+                    user_input = RIGHT;
+                    break;
+                case 27:// esc
+                    user_input = ESC;
+                    break;
+                case 10:// enter
+                    user_input = ENTER;
+                    break;
+                case 113:// quit
+                    user_input = QUIT;
+                default:
+                    break;
+            }
+
+            if (user_input == ENTER) {
+
+                switch (EDITING_HEIRARCHY[currently_editing]) {
+                    case MONTH:
+                        if (selected % 8 == 0) {// if hovering over a week
+                            currently_editing = 2;
+                            selected = 1;
+                            editing_week = &editing_month->weeks[selected];
+                        } else {// if hovering over a day
+                            currently_editing = 3;
+                            selected = 1;
+                            editing_day = get_day_from_menu_selection(selected);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (user_input == ESC) {
+                selected = 1;
+                currently_editing --;
+            }
         }
 
         void display_years() {
@@ -146,8 +165,10 @@ class Interface {
 
         }
         void display_month() {
+            clear();
             menu_options.clear();
             columns = 8;
+            int padding_x = 15, padding_y = 4;
 
             // put all buttons into a list
             for (int i = 0; i < days_in_month(editing_month->name); i++) {
@@ -160,7 +181,8 @@ class Interface {
                 menu_options.push_back(std::to_string(i + 1));
             }
 
-            // display menu options
+
+            // display buttons
             for (int i = 0; i < menu_options.size(); i++) {
                 int y_pos = (i / columns) * padding_y;// conveniently it always rounds down
                 int x_pos = 0;
@@ -181,25 +203,42 @@ class Interface {
                 attroff(A_STANDOUT);
                 mvprintw(y_pos, x_pos, menu_options[i].c_str());
             }
-
-            if (user_enter) {
-                if (selected % 8 == 0) {
-                    currently_editing = 2;
-                    editing_week = &editing_month->weeks[selected];
-                } else {
-                    currently_editing = 3;
-                    editing_day = get_day_from_menu_selection(selected);
-                }
-                user_enter = false;
-            }
+            refresh();
         }
+
         void display_week() {
+            clear();
+            menu_options.clear();
+            columns = 7;
+            int padding_x = 3, padding_y = 2;
 
+            for (int i = 0; i < 7; i++) {
+                menu_options.push_back(std::to_string(i));
+            }
+
+            for (int i = 0; i < menu_options.size(); i++) {
+                int y_pos = (i / columns) * padding_y;// conveniently it always rounds down
+                int x_pos = 0;
+
+                x_pos = padding_x + (i%columns) * padding_x;
+
+                if (i == selected) {
+                    attron(A_STANDOUT);
+                    mvprintw(y_pos, x_pos, menu_options[i].c_str());
+                    continue;
+                }
+
+                attroff(A_STANDOUT);
+                mvprintw(y_pos, x_pos, menu_options[i].c_str());
+            }
+            refresh();
         }
+
         void display_day() {
             clear();
             
             mvprintw(2, 2, std::to_string(editing_day->day).c_str());
+            refresh();
         }
 
         Day* get_day_from_menu_selection(int index) {
