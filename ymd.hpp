@@ -59,6 +59,7 @@ struct Event {
 struct Todo {
     public:
         std::string title;
+        bool complete;
 };
 
 struct Day {

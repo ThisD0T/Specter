@@ -20,6 +20,8 @@ enum UserInput {
     DOWN,
     LEFT,
     RIGHT,
+    LEFT_ARROW,
+    RIGHT_ARROW,
     ESC,
     ENTER,
     QUIT,
@@ -121,6 +123,12 @@ class Interface {
                     }
                     user_input = RIGHT;
                     break;
+                case 68:
+                    user_input = LEFT_ARROW;
+                    break;
+                case 67:
+                    user_input = RIGHT_ARROW;
+                    break;
                 case 27:// esc
                     user_input = ESC;
                     break;
@@ -139,22 +147,36 @@ class Interface {
                     case MONTH:
                         if (selected % 8 == 0) {// if hovering over a week
                             currently_editing = 2;
-                            selected = 1;
-                            editing_week = &editing_month->weeks[selected];
+                            editing_week = &editing_month->weeks[selected / 8];
+                            selected = 0;
                         } else {// if hovering over a day
                             currently_editing = 3;
-                            selected = 1;
                             editing_day = get_day_from_menu_selection(selected);
+                            selected = 0;
                         }
                         break;
+                    case WEEK:
+                        currently_editing = 3;
+                        editing_day = &editing_week->days[selected];
+                        selected = 0;
+                    case DAY:
                     default:
                         break;
                 }
             }
 
+            // just blindly pop up one level if the user presses esc
             if (user_input == ESC) {
-                selected = 1;
-                currently_editing --;
+                if (currently_editing > 0) {
+                    selected = 0;
+                    currently_editing --;
+                }
+            }
+
+            if (user_input == LEFT_ARROW) {
+
+            } else if (user_input == RIGHT_ARROW) {
+
             }
         }
 
@@ -210,9 +232,9 @@ class Interface {
             clear();
             menu_options.clear();
             columns = 7;
-            int padding_x = 3, padding_y = 2;
+               
 
-            for (int i = 0; i < 7; i++) {
+                for (int i = 0; i < 7; i++) {
                 menu_options.push_back(std::to_string(i));
             }
 
@@ -224,25 +246,35 @@ class Interface {
 
                 if (i == selected) {
                     attron(A_STANDOUT);
-                    mvprintw(y_pos, x_pos, menu_options[i].c_str());
-                    continue;
                 }
+                else {
+                    attroff(A_STANDOUT);
+                }
+                mvprintw(y_pos, x_pos, std::to_string(editing_week->days[i].day).c_str());
 
-                attroff(A_STANDOUT);
-                mvprintw(y_pos, x_pos, menu_options[i].c_str());
+                // TEMP
+                mvprintw(y_pos + 2, x_pos - 1, ("events: " + std::to_string(editing_week->days[i].events.size())).c_str());
             }
             refresh();
         }
 
         void display_day() {
             clear();
-            
-            mvprintw(2, 2, std::to_string(editing_day->day).c_str());
+            mvprintw(2, 2, ("date: " + std::to_string(editing_day->day)).c_str());
+            mvprintw(4, 2, "poggies");
             refresh();
         }
 
         Day* get_day_from_menu_selection(int index) {
             return &editing_month->weeks[(selected / 8)].days[(selected % 8) - 1];
+        }
+
+        int get_int_from_user() {
+            return 0;
+        }
+
+        string get_string_from_user() {
+            return "";
         }
 };
 
