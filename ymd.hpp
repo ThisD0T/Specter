@@ -7,6 +7,8 @@
 #ifndef __YMD__
 #define __YMD__
 
+using std::string;
+
 // file for defining year, month and day structs for other files
 
 // because you can't make a static map apparently?
@@ -53,6 +55,9 @@ inline std::string month_name_from_digit(int digit) {
 
 struct Event {
     public:
+
+        Event(string name): title(name) {}
+
         std::string title;
 };
 

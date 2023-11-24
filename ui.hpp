@@ -25,6 +25,8 @@ enum UserInput {
     ESC,
     ENTER,
     QUIT,
+    A,
+    DELETE,
     NOTHING,
 };
 
@@ -96,6 +98,7 @@ class Interface {
 
         void handle_input() {
             int input = 0;
+            int increment = 0;
             input = getch();
 
             switch (input) {
@@ -123,11 +126,19 @@ class Interface {
                     }
                     user_input = RIGHT;
                     break;
-                case 68:
+                case 121:
                     user_input = LEFT_ARROW;
+                    increment = -1;
                     break;
-                case 67:
+                case 117:
                     user_input = RIGHT_ARROW;
+                    increment = 1;
+                    break;
+                case 97:
+                    user_input = A;
+                    break;
+                case 100:
+                    user_input = DELETE;
                     break;
                 case 27:// esc
                     user_input = ESC;
@@ -165,6 +176,14 @@ class Interface {
                 }
             }
 
+            if (user_input == A) {
+                add_event();
+            } else if (user_input == DELETE && currently_editing == 3) {
+                if (get_user_confirm(1, 2, "are you sure you want to delete the highlighted event?")) {
+                    editing_day->events.erase(editing_day->events.begin()+selected);
+                }
+            }
+
             // just blindly pop up one level if the user presses esc
             if (user_input == ESC) {
                 if (currently_editing > 0) {
@@ -173,11 +192,43 @@ class Interface {
                 }
             }
 
-            if (user_input == LEFT_ARROW) {
+            int new_index;
 
-            } else if (user_input == RIGHT_ARROW) {
-
+            // increment the current editing y/m/d
+            if (user_input != LEFT_ARROW && user_input != RIGHT_ARROW)
+                return;
+            switch (EDITING_HEIRARCHY[currently_editing]) {
+                case YEAR:
+                    break;
+                case MONTH:
+                    // am I just this bad at programming?
+                    editing_month = increment_current_edit(editing_year->months, editing_month, increment);
+                    // why does every single line look like this piece of shit ^.
+                    break;
+                case WEEK:
+                    editing_week = increment_current_edit(editing_month->weeks, editing_week, increment);
+                    break;
+                case DAY:
+                    editing_day = increment_current_edit(editing_week->days, editing_day, increment);
+                    break;
+                default:
+                    break;
             }
+        }
+        
+        template<typename T>
+        T* increment_current_edit(std::vector<T> &vec, T* current_item, int increment) {
+            for (int i = 0; i < vec.size(); i++) {
+                if (current_item == &vec[i]) {
+                    if (i + increment < 0)
+                        return &vec[vec.size() - 1];
+                    if (i + increment > vec.size() - 1)
+                        return &vec[0];
+
+                    return &vec[i + increment];
+                }
+            }
+            return current_item;
         }
 
         void display_years() {
@@ -191,6 +242,9 @@ class Interface {
             menu_options.clear();
             columns = 8;
             int padding_x = 15, padding_y = 4;
+            int offset_x = 1, offset_y = 3;
+
+            mvprintw(1, 1, ('[' + editing_month->name + ']').c_str());
 
             // put all buttons into a list
             for (int i = 0; i < days_in_month(editing_month->name); i++) {
@@ -206,14 +260,14 @@ class Interface {
 
             // display buttons
             for (int i = 0; i < menu_options.size(); i++) {
-                int y_pos = (i / columns) * padding_y;// conveniently it always rounds down
+                int y_pos = (i / columns) * padding_y + offset_y;// conveniently it always rounds down
                 int x_pos = 0;
 
                 if (i % 8 == 0)  {
-                    x_pos = 1;
+                    x_pos = offset_x;
                 }
                 else {
-                    x_pos = padding_x + (i%columns) * padding_x;
+                    x_pos = padding_x + (i%columns) * padding_x + offset_x;
                 }
 
                 if (i == selected) {
@@ -234,8 +288,8 @@ class Interface {
             columns = 7;
                
 
-                for (int i = 0; i < 7; i++) {
-                menu_options.push_back(std::to_string(i));
+            for (int i = 0; i < editing_week->days.size(); i++) {
+                menu_options.push_back(std::to_string(editing_week->days[i].day));
             }
 
             for (int i = 0; i < menu_options.size(); i++) {
@@ -259,10 +313,36 @@ class Interface {
         }
 
         void display_day() {
+            int y_padding = 2, y_offset = 2;
+            columns = 1;
             clear();
-            mvprintw(2, 2, ("date: " + std::to_string(editing_day->day)).c_str());
-            mvprintw(4, 2, "poggies");
+            menu_options.clear();
+
+            mvprintw(1, 2, ("date: " + std::to_string(editing_day->day)).c_str());
+
+            for (int i = 0; i < editing_day->events.size(); i++) {
+                menu_options.push_back(editing_day->events[i].title);
+            }
+
+            for (int i = 0; i < menu_options.size(); i++) {
+                int y_pos = i * y_padding + y_offset;
+                if (i == selected) {
+                    attron(A_STANDOUT);
+                } else {
+                    attroff(A_STANDOUT);
+                }
+                mvprintw(y_pos, 1, menu_options[i].c_str());
+            }
+
             refresh();
+        }
+
+        void add_event() {
+            string name = get_string_from_user(1, 1, "Event Name");
+            editing_day->events.push_back(Event(name));
+        }
+
+        void add_todo(Day *day) {
         }
 
         Day* get_day_from_menu_selection(int index) {
@@ -273,8 +353,45 @@ class Interface {
             return 0;
         }
 
-        string get_string_from_user() {
-            return "";
+        string get_string_from_user(int x, int y, string title = "") {
+            // should probably make it so it doesn't make a new window every single time
+            WINDOW* input_window;
+            int string_y = y;
+            if (title == "") {// doesn't have title
+                input_window = newwin(3, 30, y, x);
+            } else {// has title
+                input_window = newwin(4, 30, y, x);
+            }
+
+            string string = "";
+            char input;
+            while (true) {
+                wclear(input_window);
+
+                box(input_window, 0, 0);
+                if (title != "") {
+                    wprintw(input_window, title.c_str());
+                }
+                mvwprintw(input_window, string_y, x, string.c_str());// warning because there may be a format specifier
+
+                wrefresh(input_window);
+
+                input = wgetch(input_window);
+                if (input == '\n') {
+                    break;
+                }
+                string += input;
+            }
+
+            return string;
+        }
+
+        bool get_user_confirm(int x, int y, string title = "") {
+            mvprintw(y, x, title.c_str());
+            char input = getch();
+            if (input == 10) 
+                return true;
+            else return false;
         }
 };
 
