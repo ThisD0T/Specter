@@ -1,11 +1,13 @@
+#ifndef __YMD__
+#define __YMD__
+
 #include <iostream>
 #include <vector>
 #include <string>
 #include <map>
 #include <cmath>
-
-#ifndef __YMD__
-#define __YMD__
+#include <ncurses.h>
+#include "ui.hpp"
 
 using std::string;
 
@@ -67,12 +69,13 @@ struct Todo {
         bool complete;
 };
 
-struct Day {
+class Day {
     public:
         int day;
 
         std::vector<Event> events;
         std::vector<Todo> todos;
+
 };
 
 struct Week {
@@ -85,10 +88,10 @@ class Month {
         std::vector<Week> weeks;
         int digit;
         std::string name;
+        int num_weeks;
 
         Month(int month_digit): digit(month_digit), name(month_name_from_digit(digit)) {
             int days_counter = 0;
-            int num_weeks;
 
             if (days_in_month(name) > 28) {
                 num_weeks = 5;
@@ -114,6 +117,25 @@ class Month {
 
                 weeks.push_back(new_week);
             }
+        }
+
+        Screen screen;
+        void load_screen() {
+            // y then x because
+            for (int j = 0; j < num_weeks; j++) {
+                for (int i = 0; i < 8; i++) {
+                    if (i == 0) {
+                        screen.menu_options[j].push_back(MenuOption("Week: " + std::to_string(i), "week", j, i));
+                    } else {
+                        screen.menu_options[j].push_back(MenuOption(std::to_string(i), "day", j, i));
+                    }
+                }
+            }
+        }
+
+        void draw_screen() {
+            load_screen();
+            screen.display();
         }
 };
 
