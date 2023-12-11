@@ -17,22 +17,6 @@ enum EditingType{
     DAY,
 };
 
-enum UserInput {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    LEFT_ARROW,
-    RIGHT_ARROW,
-    ESC,
-    ENTER,
-    QUIT,
-    A,
-    DELETE,
-    NOTHING,
-};
-
-
 // the class that will handle user input, this WILL NOT do any manipulation of 
 // the data, that is for Manager this is simple a class for the user to 
 // interface with Manager (like some kind of User Interface or something)
@@ -70,7 +54,7 @@ class Interface {
 
             getmaxyx(stdscr, x_width, y_width);
 
-            editing_month = &editing_year->months[1];
+            editing_month = &editing_year->months[2];
             editing_week = &editing_month->weeks[0];
             editing_day = &editing_week->days[0];
             currently_editing = 1;
@@ -81,7 +65,7 @@ class Interface {
         void main_loop() {
             // TEST
             while (user_input != QUIT) {
-                switch (EDITING_HEIRARCHY[currently_editing]) {
+                /*switch (EDITING_HEIRARCHY[currently_editing]) {
                     case YEAR:
                         display_year();
                         break;
@@ -94,7 +78,8 @@ class Interface {
                     case DAY:
                         display_day();
                         break;
-                }
+                }*/
+                editing_month->draw_screen();
                 handle_input();
             }
             endwin();
@@ -107,27 +92,15 @@ class Interface {
 
             switch (input) {
                 case 107:// up 
-                    if (selected - columns >= 0) {
-                        selected -= columns;
-                    }
                     user_input = UP;
                     break;
                 case 106:// down
-                    if (selected + columns < menu_options.size()) {
-                        selected += columns;
-                    }
                     user_input = DOWN;
                     break;
                 case 104:// left
-                    if (selected - 1 >= 0) {
-                        selected --;
-                    }
                     user_input = LEFT;
                     break;
                 case 108:// right
-                    if (selected + 1 < menu_options.size()) {
-                        selected ++;
-                    }
                     user_input = RIGHT;
                     break;
                 case 121:

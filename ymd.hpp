@@ -89,6 +89,7 @@ class Month {
         int digit;
         std::string name;
         int num_weeks;
+        Screen screen;
 
         Month(int month_digit): digit(month_digit), name(month_name_from_digit(digit)) {
             int days_counter = 0;
@@ -119,16 +120,23 @@ class Month {
             }
         }
 
-        Screen screen;
         void load_screen() {
+            screen.menu_options.clear();
+            int day_count = 0;
             // y then x because
-            for (int j = 0; j < num_weeks; j++) {
-                for (int i = 0; i < 8; i++) {
-                    if (i == 0) {
-                        screen.menu_options[j].push_back(MenuOption("Week: " + std::to_string(i), "week", j, i));
-                    } else {
-                        screen.menu_options[j].push_back(MenuOption(std::to_string(i), "day", j, i));
+            for (int j = 1; j < num_weeks + 1; j++) {
+                for (int i = 1; i < 9; i++) {
+                    if (i == 1) {
+                        screen.menu_options[j-1].push_back(MenuOption("Week: " + std::to_string(j), "week", j * 2, 2));
+                        continue;
                     }
+
+                    day_count ++;
+                    if (day_count > days_in_month(name)) {
+                        break;
+                    }
+
+                    screen.menu_options[j-1].push_back(MenuOption(std::to_string(day_count), "day", j * 2, 6 + i * 4));
                 }
             }
         }
