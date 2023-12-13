@@ -7,7 +7,12 @@ using std::string, std::vector;
 #ifndef __UI_MANAGER__
 #define __UI_MANAGER__
 
+class Day;
 struct Week;
+class Month;
+class Year;
+
+class Screen;
 
 enum UserInput {
     UP,
@@ -24,55 +29,15 @@ enum UserInput {
     NOTHING,
 };
 
-class MenuOption {
-public:
-    string name; 
-    string desc = "";
-    string tag;
-    int pos_x;
-    int pos_y;
-
-    bool highlighted = false;
-
-    MenuOption(string name, string tag, int pos_y, int pos_x, string desc = ""): name(name), tag(tag), desc(desc), pos_x(pos_x), pos_y(pos_y) {
-        
-    }
-};
-
-// this class will handle input from it's own menu options and print to the screen.
-// this is so you can have all different kinds of menu screens to go through, what fun!
 class Screen {
 public:
-    vector<vector<MenuOption>> menu_options {
-        {},
-        {},
-        {},
-        {},
-        {}
-    };
-    MenuOption *active_menu_option;
-
     int selected_x = 1, selected_y = 1;
 
-    Screen(){}
+    Screen() {}
 
-    void display() {
-        for (int j = 0; j < 5; j++) {
-            for (int i = 0; i < menu_options[j].size(); i++) {
-                if (j == selected_x && i == selected_y) {
-                    attron(A_STANDOUT);
-                }
-                else {
-                    attroff(A_STANDOUT);
-                }
+    virtual void display() {};
 
-                mvprintw(menu_options[j][i].pos_y, menu_options[j][i].pos_x, menu_options[j][i].name.c_str());
-            }
-        }
-    }
-
-    void handle_input (UserInput input) {
-        
+    virtual Screen *handle_input (UserInput input) {
         switch (input) {
             case UP:
                 selected_y ++;
@@ -86,8 +51,21 @@ public:
             case RIGHT:
                 selected_x ++;
                 break;
+            case ENTER:
+                break;
             default:
                 break;
+        }
+        return nullptr;
+    }
+
+    // checks to see if you are currently printing the highlighted "button" and
+    // sets ncurses to highlight that text
+    void set_highlighted(int y, int x) {
+        if (selected_x == x && selected_y == y) {
+            attron(A_STANDOUT);
+        } else {
+            attroff(A_STANDOUT);
         }
     }
 };

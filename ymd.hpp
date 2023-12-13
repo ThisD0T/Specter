@@ -8,6 +8,10 @@
 #include <cmath>
 #include <ncurses.h>
 #include "ui.hpp"
+#include "lib.hpp"
+#include <sstream>
+#include <boost/archive/basic_binary_iarchive.hpp>
+#include <boost/archive/basic_binary_oarchive.hpp>
 
 using std::string;
 
@@ -57,9 +61,6 @@ inline std::string month_name_from_digit(int digit) {
 
 struct Event {
     public:
-
-        Event(string name): title(name) {}
-
         std::string title;
 };
 
@@ -69,29 +70,85 @@ struct Todo {
         bool complete;
 };
 
-class Day {
+class Day: public Screen {
     public:
-        int day;
+        int day, month_num;
 
         std::vector<Event> events;
         std::vector<Todo> todos;
 
+        Day(int day, int month_num): day(day), month_num(month_num) {}
+
+        void add_event() {
+            string name = get_string_input(2, 2, "Event Name");
+            events.push_back(Event{name});
+        }
+
+        Screen *handle_input(UserInput input) {
+            switch (input) {
+                case UP:
+                    selected_y --;
+                    break;
+                case DOWN:
+                    selected_y ++;
+                    break;
+                case LEFT:
+                    selected_x --;
+                    break;
+                case RIGHT:
+                    selected_x ++;
+                    break;
+                case ENTER:
+                    break;
+                case DELETE:
+                    if (get_user_confirm(2, 2, "Are you sure you want to delete event?")) {
+                        events.erase(events.begin()+selected_y);
+                    }
+                    break;
+                case A:
+                    add_event();
+                    break;
+                default:
+                    break;
+            }
+            return nullptr;
+        }
+
+        void display() {
+            clear();
+
+            mvprintw(1, 2, "%i of %s", day, month_name_from_digit(month_num).c_str());
+
+            for (int i = 1; i < events.size()+1; i++) {
+                set_highlighted(i, selected_x);
+                mvprintw(i * 3, 2, events[i-1].title.c_str());
+            }
+        }
 };
 
-struct Week {
+class Week: public Screen {
     public:
         std::vector<Day> days;
+
+        void display(int y_pos, int grid_y_pos, int y_select, int x_select) {
+            selected_y = y_select;
+            selected_x = x_select;
+
+            for (int i = 0; i < days.size(); i++) {
+                set_highlighted(grid_y_pos, i);
+                mvprintw(y_pos, i * 10, "%i", days[i].day);
+            }
+        }
 };
 
-class Month {
+class Month: public Screen {
     public:
         std::vector<Week> weeks;
         int digit;
         std::string name;
         int num_weeks;
-        Screen screen;
 
-        Month(int month_digit): digit(month_digit), name(month_name_from_digit(digit)) {
+        Month(int month_digit): digit(month_digit), name(month_name_from_digit(month_digit)) {
             int days_counter = 0;
 
             if (days_in_month(name) > 28) {
@@ -112,7 +169,7 @@ class Month {
                         break;
                     }
 
-                    Day new_day = {days_counter};
+                    Day new_day = Day(days_counter, digit);
                     new_week.days.push_back(new_day);
                 }
 
@@ -120,35 +177,45 @@ class Month {
             }
         }
 
-        void load_screen() {
-            screen.menu_options.clear();
-            int day_count = 0;
-            // y then x because
-            for (int j = 1; j < num_weeks + 1; j++) {
-                for (int i = 1; i < 9; i++) {
-                    if (i == 1) {
-                        screen.menu_options[j-1].push_back(MenuOption("Week: " + std::to_string(j), "week", j * 2, 2));
-                        continue;
-                    }
-
-                    day_count ++;
-                    if (day_count > days_in_month(name)) {
-                        break;
-                    }
-
-                    screen.menu_options[j-1].push_back(MenuOption(std::to_string(day_count), "day", j * 2, 6 + i * 4));
-                }
+        Screen *handle_input(UserInput input) {
+            switch (input) {
+                case UP:
+                    selected_y --;
+                    break;
+                case DOWN:
+                    selected_y ++;
+                    break;
+                case LEFT:
+                    selected_x --;
+                    break;
+                case RIGHT:
+                    selected_x ++;
+                    break;
+                case ENTER:
+                    return &weeks[selected_y].days[selected_x];
+                    break;
+                case A:
+                    weeks[selected_y].days[selected_x].add_event();
+                    break;
+                default:
+                    break;
             }
+            return nullptr;
         }
 
-        void draw_screen() {
-            load_screen();
-            screen.display();
+        void display() {
+            clear();
+            for (int i = 0; i < weeks.size(); i++) {
+                weeks[i].display(i * 4, i, selected_y, selected_x);
+            }
         }
 };
 
-class Year {
+class Year: public Screen {
     public:
+        int year_num;
+        std::vector<Month> months;
+
         Year(): year_num(0) {};
         Year(int year_num): year_num(year_num) {
             for (int i = 1; i < 13; i++) {
@@ -157,31 +224,39 @@ class Year {
             }
         }
 
-        void test_print() {
-            for (Month month : months) {
+        void display() {
+            clear();
+            mvprintw(1, 2, "[year]");
+            for (int i = 1; i < 13; i++) {
+                set_highlighted(selected_y, i);
+                mvprintw(3, i * 5, month_name_from_digit(i).c_str());
             }
         }
 
-        int year_num;
-        std::vector<Month> months;
+        Screen *handle_input(UserInput input) {
+            switch (input) {
+                case ENTER:
+                    return &months[selected_x - 1];
+                case UP:
+                    selected_y ++;
+                    break;
+                case DOWN:
+                    selected_y --;
+                    break;
+                case LEFT:
+                    selected_x --;
+                    break;
+                case RIGHT:
+                    selected_x ++;
+                    break;
+                default:
+                    break;
+            }
+
+            return nullptr;
+        }
 };
 
 std::map<std::string, int> get_days_in_months();
-
-
-
-//stores data that needs to be serde'd
-class Manager {
-    public:
-        Manager() {}
-        
-        Year make_new_year(int year_num) {
-            Year year = Year(year_num);
-            year.test_print();
-            return year;
-        };
-
-        Year current_year_editing;
-};
 
 #endif

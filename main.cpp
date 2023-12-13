@@ -10,8 +10,6 @@ int main() {
     Year year = Year(2023);
     Interface interface = Interface(&year);
     interface.init();
-    Manager manager;
-    manager.make_new_year(2023);
 
     return 0;
 }

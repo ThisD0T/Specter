@@ -7,6 +7,14 @@
 
 using std::string;
 
+bool get_user_confirm(int x, int y, string title = "") {
+    mvprintw(y, x, title.c_str());
+    char input = getch();
+    if (input == 10) 
+        return true;
+    else return false;
+}
+
 string get_string_input(int x, int y, string title = "") {
     // should probably make it so it doesn't make a new window every single time
     WINDOW* input_window;
