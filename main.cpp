@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 
@@ -7,8 +8,8 @@
 #include "ui_manager.hpp"
 
 int main() {
-    Year year = Year(2023);
-    Interface interface = Interface(&year);
+    Year year = Year(1977);
+    Interface interface = Interface("specter.txt");
     interface.init();
 
     return 0;

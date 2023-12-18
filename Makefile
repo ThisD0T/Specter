@@ -4,7 +4,7 @@ CC = g++
 
 OBJ_NAME = specter
 
-FLAGS = -lncurses
+FLAGS = -lncurses -lboost_serialization
 
 all : $(OBJS)
 	$(CC) $(OBJS) $(FLAGS) -o $(OBJ_NAME)

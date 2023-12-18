@@ -6,6 +6,10 @@
 #include "ui.hpp"
 #include "lib.hpp"
 
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 using std::string;
 using std::vector;
 
@@ -21,10 +25,9 @@ enum EditingType{
 
 class Interface {
     public:
-
-        // "editing_ymwd" meaning the one that is currently being editetd 
         Screen *editing_screen;
         vector<Screen *> editing_stack;
+        Year editing_year;
 
         int x_width, y_width;
         WINDOW* main_win;
@@ -34,9 +37,21 @@ class Interface {
 
         const EditingType EDITING_HEIRARCHY[4] = {YEAR, MONTH, WEEK, DAY};
 
-        Interface(Year *year) {
-            editing_screen = year;
-            editing_stack.push_back(year);
+        Interface(string file_name) {
+            {
+                std::ifstream ifs(file_name);
+                boost::archive::text_iarchive iarchive(ifs);
+
+                iarchive >> editing_year;
+            }
+            
+            editing_stack.push_back(&editing_year);
+
+        }
+
+        Interface(Year &year) {
+            editing_year = year;
+            editing_stack.push_back(&year);
         }
 
         void init() {
@@ -100,6 +115,7 @@ class Interface {
                     break;
                 case 113:// quit
                     user_input = QUIT;
+                    save_current_year();
                 default:
                     break;
             }
@@ -132,14 +148,24 @@ class Interface {
             return current_item;
         }
 
-        /*
-        Day* get_day_from_menu_selection(int index) {
-            return &editing_month->weeks[(selected / 8)].days[(selected % 8) - 1];
-        }
-        */
+        void save_current_year() {
+            std::ofstream ofs("specter.txt");
+            {
+                boost::archive::text_oarchive oarchive(ofs);
 
-        int get_int_from_user() {
-            return 0;
+                oarchive << editing_year;
+            }
+        }
+
+        void load_year(string file_name) {
+            std::ifstream ifs(file_name);
+
+
+            {
+                boost::archive::text_iarchive iarchive(ifs);
+
+                iarchive >> editing_year;
+            }
         }
 };
 

@@ -10,8 +10,9 @@
 #include "ui.hpp"
 #include "lib.hpp"
 #include <sstream>
-#include <boost/archive/basic_binary_iarchive.hpp>
-#include <boost/archive/basic_binary_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
 using std::string;
 
@@ -62,6 +63,14 @@ inline std::string month_name_from_digit(int digit) {
 struct Event {
     public:
         std::string title;
+
+    private:
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            ar & title;
+        }
 };
 
 struct Todo {
@@ -77,6 +86,7 @@ class Day: public Screen {
         std::vector<Event> events;
         std::vector<Todo> todos;
 
+        Day() {}
         Day(int day, int month_num): day(day), month_num(month_num) {}
 
         void add_event() {
@@ -124,6 +134,16 @@ class Day: public Screen {
                 mvprintw(i * 3, 2, events[i-1].title.c_str());
             }
         }
+
+    private:
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            ar & (events);
+            ar & day;
+            ar & month_num;
+        }
 };
 
 class Week: public Screen {
@@ -139,6 +159,14 @@ class Week: public Screen {
                 mvprintw(y_pos, i * 10, "%i", days[i].day);
             }
         }
+
+    private:
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            ar & days;
+        }
 };
 
 class Month: public Screen {
@@ -148,6 +176,7 @@ class Month: public Screen {
         std::string name;
         int num_weeks;
 
+        Month() {}
         Month(int month_digit): digit(month_digit), name(month_name_from_digit(month_digit)) {
             int days_counter = 0;
 
@@ -209,6 +238,17 @@ class Month: public Screen {
                 weeks[i].display(i * 4, i, selected_y, selected_x);
             }
         }
+
+    private:
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            ar & weeks;
+            ar & digit;
+            ar & name;
+            ar & num_weeks;
+        }
 };
 
 class Year: public Screen {
@@ -226,6 +266,7 @@ class Year: public Screen {
 
         void display() {
             clear();
+            printw("%i", year_num);
             mvprintw(1, 2, "[year]");
             for (int i = 1; i < 13; i++) {
                 set_highlighted(selected_y, i);
@@ -255,8 +296,15 @@ class Year: public Screen {
 
             return nullptr;
         }
-};
 
-std::map<std::string, int> get_days_in_months();
+    private:
+        friend class boost::serialization::access;
+
+        template<class Archive>
+        void serialize(Archive &ar, const unsigned int version) {
+            ar & year_num;
+            ar & months;
+        }
+};
 
 #endif
